@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Adventures of Detective Hash</title>
+    <style>
+        :root {
+            --primary-color: #1a1c2c;
+            --secondary-color: #29366f;
+            --accent-color: #f4b41b;
+            --text-color: #e8e6e3;
+            --clue-color: #5b6ee1;
+            --error-color: #cc3363;
+            --success-color: #3cba54;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px var(--accent-color); }
+            50% { box-shadow: 0 0 20px var(--accent-color); }
+            100% { box-shadow: 0 0 5px var(--accent-color); }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        #game-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .scene {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .scene.active {
+            display: block;
+        }
+
+        .title {
+            font-size: 3em;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(244, 180, 27, 0.5);
+            animation: slideIn 1s ease-out;
+        }
+
+        .story-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(41, 54, 111, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(244, 180, 27, 0.3);
+        }
+
+        .button {
+            background: linear-gradient(45deg, var(--accent-color), #f7d06b);
+            color: var(--primary-color);
+            border: none;
+            padding: 12px 24px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(244, 180, 27, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 180, 27, 0.4);
+        }
+
+        .hash-table {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(41, 54, 111, 0.2);
+            border-radius: 15px;
+        }
+
+        .bucket {
+            background: rgba(91, 110, 225, 0.2);
+            min-height: 150px;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(91, 110, 225, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .bucket.highlight {
+            animation: glow 1.5s infinite;
+            background: rgba(91, 110, 225, 0.3);
+        }
+
+        .clue {
+            background: var(--clue-color);
+            padding: 15px;
+            margin: 8px;
+            border-radius: 8px;
+            cursor: move;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .clue::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .clue:hover::before {
+            left: 100%;
+        }
+
+        .clue-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(41, 54, 111, 0.2);
+            border-radius: 15px;
+        }
+
+        .score-display {
+            font-size: 1.4em;
+            margin: 15px 0;
+            color: var(--accent-color);
+            text-shadow: 0 0 5px rgba(244, 180, 27, 0.3);
+        }
+
+        .timer {
+            font-size: 1.8em;
+            margin: 15px 0;
+            color: var(--accent-color);
+            text-shadow: 0 0 5px rgba(244, 180, 27, 0.3);
+        }
+
+        .message {
+            font-size: 1.4em;
+            margin: 15px 0;
+            color: var(--success-color);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .detective-office {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('/api/placeholder/1000/600') center/cover no-repeat;
+            opacity: 0.15;
+            z-index: -1;
+            border-radius: 15px;
+        }
+
+        .evidence-board {
+            background: rgba(41, 54, 111, 0.4);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(244, 180, 27, 0.2);
+        }
+
+        .chapter-title {
+            font-size: 2em;
+            color: var(--accent-color);
+            margin: 20px 0;
+            text-shadow: 0 0 8px rgba(244, 180, 27, 0.4);
+        }
+
+        #dialogue-box {
+            background: rgba(26, 28, 44, 0.9);
+            border: 2px solid var(--accent-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 80%;
+            position: relative;
+        }
+
+        .character-name {
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div class="detective-office"></div>
+        
+        <!-- Title Scene -->
+        <div id="title-scene" class="scene active">
+            <h1 class="title">The Adventures of Detective Hash</h1>
+            <div class="story-text">
+                <p>In the neon-lit streets of Cryptopolis, where technology and mystery intertwine, the prestigious Royal Museum has been struck by an audacious theft. The legendary Emerald Crown, a priceless artifact dating back to the ancient Digital Dynasty, has vanished without a trace.</p>
+                <p>As Detective Hash, armed with your revolutionary HashTable-O-Matic device, you must decode the criminal's trail of encrypted clues before the crown disappears forever into the digital underground.</p>
+            </div>
+            <button class="button" onclick="startGame()">Begin Investigation</button>
+        </div>
+
+        <!-- Chapter 1 Scene -->
+        <div id="chapter1-scene" class="scene">
+            <div class="chapter-title">Chapter 1: The Museum Break-in</div>
+            <div id="dialogue-box">
+                <div class="character-name">Museum Curator</div>
+                <p>"Detective Hash, thank goodness you're here! The security system was completely bypassed, but the thief left behind these strange encoded clues. They seem to be taunting us..."</p>
+            </div>
+            <button class="button" onclick="startLevel1()">Examine Evidence</button>
+        </div>
+
+        <!-- Level 1 Scene -->
+        <div id="level1-scene" class="scene">
+            <h2 class="chapter-title">Level 1: Decoding the Evidence</h2>
+            <div class="evidence-board">
+                <div class="score-display">Investigation Progress: <span id="score">0</span></div>
+                <div class="timer">Time Remaining: <span id="timer">60</span>s</div>
+                <p>Use your HashTable-O-Matic to organize the encrypted clues. Each clue must be placed in its corresponding secure vault.</p>
+                <div class="clue-container" id="clues"></div>
+                <div class="hash-table" id="hash-table"></div>
+                <div class="message" id="level-message"></div>
+            </div>
+        </div>
+
+        <!-- Level 2 Scene -->
+        <div id="level2-scene" class="scene">
+            <h2 class="chapter-title">Level 2: The Encryption Collision</h2>
+            <div class="evidence-board">
+                <div id="dialogue-box">
+                    <div class="character-name">Detective Hash</div>
+                    <p>"Interesting... These clues are using the same encryption key. We'll need to implement a special resolution protocol."</p>
+                </div>
+                <button class="button" onclick="resolveCollision('chaining')">Use Neural Chaining</button>
+                <button class="button" onclick="resolveCollision('openAddressing')">Apply Quantum Addressing</button>
+                <div class="hash-table" id="collision-table"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Scene -->
+        <div id="gameover-scene" class="scene">
+            <h2 class="chapter-title">Case Report</h2>
+            <div class="evidence-board">
+                <div class="score-display">Final Score: <span id="final-score">0</span></div>
+                <div class="message">Detective Rank: <span id="detective-rank">Rookie</span></div>
+                <div class="story-text">
+                    <p>With your brilliant deductive skills and mastery of the HashTable-O-Matic, you've successfully tracked down the stolen Emerald Crown!</p>
+                    <p>The citizens of Cryptopolis can rest easy knowing their precious artifact has been returned to its rightful place.</p>
+                </div>
+                <button class="button" onclick="restartGame()">Take On New Case</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state and story content
+        let gameState = {
+            score: 0,
+            currentLevel: 1,
+            timer: 60,
+            timerInterval: null,
+            clues: [
+                { id: 1, name: "Quantum Key Fragment", hash: 2, description: "A mysterious digital key emanating strange energy" },
+                { id: 2, name: "Holographic Footprint", hash: 1, description: "A 3D projection of the thief's trail" },
+                { id: 3, name: "Encrypted Note", hash: 0, description: "A message written in ancient binary code" },
+                { id: 4, name: "Neural Resonance", hash: 2, description: "Traces of cognitive activity left behind" },
+                { id: 5, name: "Time Signature", hash: 1, description: "A temporal anomaly marking the theft" },
+                { id: 6, name: "Digital Residue", hash: 0, description: "Remnants of advanced cloaking technology" }
+            ],
+            story: {
+                currentChapter: 1,
+                chapters: [
+                    {
+                        title: "The Museum Break-in",
+                        description: "A high-tech heist has occurred at the Royal Museum of Cryptopolis..."
+                    },
+                    {
+                        title: "The Encryption Collision",
+                        description: "The thief's trail leads to a complex web of encrypted data..."
+                    },
+                    {
+                        title: "The Final Decode",
+                        description: "All pieces of the puzzle are coming together..."
+                    }
+                ]
+            }
+        };
+
+
+        // Initialize drag and drop
+        function initializeDragAndDrop() {
+            const clues = document.querySelectorAll('.clue');
+            const buckets = document.querySelectorAll('.bucket');
+
+            clues.forEach(clue => {
+                clue.addEventListener('dragstart', dragStart);
+                clue.addEventListener('dragend', dragEnd);
+            });
+
+            buckets.forEach(bucket => {
+                bucket.addEventListener('dragover', dragOver);
+                bucket.addEventListener('drop', drop);
+            });
+        }
+
+        // Drag and drop event handlers
+        function dragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            e.target.classList.add('dragging');
+        }
+
+        function dragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            e.target.classList.add('highlight');
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            e.target.classList.remove('highlight');
+            
+            const clueId = e.dataTransfer.getData('text/plain');
+            const clue = document.getElementById(clueId);
+            const bucketIndex = Array.from(e.target.parentNode.children).indexOf(e.target);
+            
+            const clueData = gameState.clues.find(c => c.id === parseInt(clueId.split('-')[1]));
+            
+            if (clueData && clueData.hash === bucketIndex) {
+                e.target.appendChild(clue);
+                updateScore(100);
+                checkLevelComplete();
+            } else {
+                updateScore(-50);
+                document.getElementById('clues').appendChild(clue);
+            }
+        }
+
+        // Game mechanics
+        function startGame() {
+            showScene('chapter1-scene');
+            playChapterIntro(1);
+        }
+
+        function startLevel1() {
+            showScene('level1-scene');
+            initializeLevel1();
+            startTimer();
+        }
+
+        function playChapterIntro(chapter) {
+            const chapterData = gameState.story.chapters[chapter - 1];
+            // Add chapter intro animations and dialogue
+            gameState.story.currentChapter = chapter;
+        }
+        
+        function initializeLevel1() {
+            // Create buckets
+            const hashTable = document.getElementById('hash-table');
+            hashTable.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const bucket = document.createElement('div');
+                bucket.className = 'bucket';
+                bucket.innerHTML = `Bucket ${i}`;
+                hashTable.appendChild(bucket);
+            }
+
+            // Create clues
+            const cluesContainer = document.getElementById('clues');
+            cluesContainer.innerHTML = '';
+            gameState.clues.forEach(clue => {
+                const clueElement = document.createElement('div');
+                clueElement.id = `clue-${clue.id}`;
+                clueElement.className = 'clue';
+                clueElement.draggable = true;
+                clueElement.innerHTML = clue.name;
+                cluesContainer.appendChild(clueElement);
+            });
+
+            initializeDragAndDrop();
+        }
+
+        function startTimer() {
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer--;
+                document.getElementById('timer').textContent = gameState.timer;
+                
+                if (gameState.timer <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateScore(points) {
+            gameState.score += points;
+            document.getElementById('score').textContent = gameState.score;
+        }
+
+        function checkLevelComplete() {
+            const buckets = document.querySelectorAll('.bucket');
+            let complete = true;
+
+            buckets.forEach((bucket, index) => {
+                const cluesInBucket = bucket.querySelectorAll('.clue');
+                const correctClues = gameState.clues.filter(clue => clue.hash === index);
+                
+                if (cluesInBucket.length !== correctClues.length) {
+                    complete = false;
+                }
+            });
+
+            if (complete) {
+                clearInterval(gameState.timerInterval);
+                document.getElementById('level-message').textContent = "Level Complete! Moving to Level 2...";
+                setTimeout(() => {
+                    startLevel2();
+                }, 2000);
+            }
+        }
+
+        function startLevel2() {
+            showScene('level2-scene');
+            initializeLevel2();
+        }
+
+        function initializeLevel2() {
+            const collisionTable = document.getElementById('collision-table');
+            collisionTable.innerHTML = '';
+            // Initialize collision scenario
+            // (Simplified for this demo)
+        }
+
+        function resolveCollision(strategy) {
+            // Handle collision resolution
+            // (Simplified for this demo)
+            endGame();
+        }
+
+        function endGame() {
+            showScene('gameover-scene');
+            document.getElementById('final-score').textContent = gameState.score;
+            const rank = calculateRank(gameState.score);
+            document.getElementById('detective-rank').textContent = rank;
+        }
+
+        function calculateRank(score) {
+            if (score >= 500) return "Master Detective";
+            if (score >= 300) return "Senior Detective";
+            if (score >= 100) return "Junior Detective";
+            return "Rookie";
+        }
+
+        function restartGame() {
+            gameState = {
+                score: 0,
+                currentLevel: 1,
+                timer: 60,
+                timerInterval: null,
+                clues: [...gameState.clues] // Reset clues
+            };
+            showScene('title-scene');
+        }
+
+        function showScene(sceneId) {
+            document.querySelectorAll('.scene').forEach(scene => {
+                scene.classList.remove('active');
+            });
+            document.getElementById(sceneId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
